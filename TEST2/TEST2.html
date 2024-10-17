@@ -34,56 +34,65 @@
             return conditions[Math.floor(Math.random() * conditions.length)];
         }
 
-        function adjustStats(condition, possession) {
-            switch(condition) {
-                case '不調':
-                    return possession - 10; // ボール支配率を10%減
-                    return pass
-                case '好調':
-                    return possession + 10; // ボール支配率を10%増
-                case '普通':
-                default:
-                    return possession; // そのまま
+        function adjustStats(condition, possession, pass, shots) {
+            if (condition === '不調') {
+                return {
+                    possession: possession - 10,
+                    pass: pass - 20,
+                    shots: shots - 5
+                };
+            } else if (condition === '好調') {
+                return {
+                    possession: possession + 10,
+                    pass: pass + 20,
+                    shots: shots + 5
+                };
+            } else {
+                return {
+                    possession: possession,
+                    pass: pass,
+                    shots: shots
+                };
             }
         }
 
         function predictOutcome() {
             let team1Score = 0; // バルセロナの得点
             const team1Shots = 12.67; // バルセロナのシュート数
-            let team1Possession = 65; // バルセロナのボール支配率
-            const team1pass = 88; // バルセロナのパス成功率
+            const team1Possession = 65; // バルセロナのボール支配率
+            const team1Pass = 88; // バルセロナのパス成功率
 
             let team2Score = 0; // レッドスターの得点
             const team2Shots = 14.2; // レッドスターのシュート数
-            let team2Possession = 56; // レッドスターのボール支配率
-            const team2pass = 82; // レッドスターのパス成功率
+            const team2Possession = 56; // レッドスターのボール支配率
+            const team2Pass = 82; // レッドスターのパス成功率
 
             // コンディションをランダムに設定
             const team1Condition = randomCondition();
             const team2Condition = randomCondition();
 
             // スタッツを調整
-            const adjustedTeam1Possession = adjustStats(team1Condition, team1Possession);
-            const adjustedTeam2Possession = adjustStats(team2Condition, team2Possession);
+            const adjustedTeam1Stats = adjustStats(team1Condition, team1Possession, team1Pass, team1Shots);
+            const adjustedTeam2Stats = adjustStats(team2Condition, team2Possession, team2Pass, team2Shots);
 
             // ボール支配率による得点
-            if (adjustedTeam1Possession > adjustedTeam2Possession) {
+            if (adjustedTeam1Stats.possession > adjustedTeam2Stats.possession) {
                 team1Score += 1; // バルセロナに1得点
-            } else if (adjustedTeam1Possession < adjustedTeam2Possession) {
+            } else if (adjustedTeam1Stats.possession < adjustedTeam2Stats.possession) {
                 team2Score += 1; // レッドスターに1得点
             }
 
             // パス成功率による得点
-            if (team1pass > team2pass) {
+            if (adjustedTeam1Stats.pass > adjustedTeam2Stats.pass) {
                 team1Score += 1; // バルセロナに1得点
-            } else if (team1pass < team2pass) {
+            } else if (adjustedTeam1Stats.pass < adjustedTeam2Stats.pass) {
                 team2Score += 1; // レッドスターに1得点
             }
 
             // シュート数による得点
-            if (team1Shots > team2Shots) {
+            if (adjustedTeam1Stats.shots > adjustedTeam2Stats.shots) {
                 team1Score += 1; // バルセロナに1得点
-            } else if (team1Shots < team2Shots) {
+            } else if (adjustedTeam1Stats.shots < adjustedTeam2Stats.shots) {
                 team2Score += 1; // レッドスターに1得点
             }
 
@@ -103,17 +112,17 @@
                 <div class="team-stats">
                     <h2>バルセロナのスタッツ</h2>
                     <p>得点: ${team1Score}</p>
-                    <p>シュート数: ${team1Shots.toFixed(2)}</p>
-                    <p>ボール支配率: ${adjustedTeam1Possession}%</p>
-                    <p>パス成功率: ${team1pass}%</p>
+                    <p>シュート数: ${adjustedTeam1Stats.shots.toFixed(2)}</p>
+                    <p>ボール支配率: ${adjustedTeam1Stats.possession}%</p>
+                    <p>パス成功率: ${adjustedTeam1Stats.pass}%</p>
                     <p>コンディション: ${team1Condition}</p>
                 </div>
                 <div class="team-stats">
                     <h2>レッドスターのスタッツ</h2>
                     <p>得点: ${team2Score}</p>
-                    <p>シュート数: ${team2Shots.toFixed(2)}</p>
-                    <p>ボール支配率: ${adjustedTeam2Possession}%</p>
-                    <p>パス成功率: ${team2pass}%</p>
+                    <p>シュート数: ${adjustedTeam2Stats.shots.toFixed(2)}</p>
+                    <p>ボール支配率: ${adjustedTeam2Stats.possession}%</p>
+                    <p>パス成功率: ${adjustedTeam2Stats.pass}%</p>
                     <p>コンディション: ${team2Condition}</p>
                 </div>
                 <h2>結果: ${outcome}</h2>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>サッカーシミュレーション with CSV</title>
+</head>
+<body>
+    <h1>サッカーシミュレーション</h1>
+    <div id="simulation-log"></div>
+
+    <script>
+        async function loadCSVData(url) {
+            const response = await fetch(url);
+            const data = await response.text();
+            const rows = data.trim().split("\n");
+            const headers = rows[0].split(",");
+            const players = rows.slice(1).map(row => {
+                const values = row.split(",");
+                let player = {};
+                headers.forEach((header, i) => player[header] = isNaN(values[i]) ? values[i] : parseInt(values[i]));
+                return player;
+            });
+            return players;
+        }
+
+        async function simulateMatch90minWithResult(kickoffPlayerName, totalIntervals = 9, intervalDuration = 10) {
+            const team1 = await loadCSVData("team1.csv");
+            const team2 = await loadCSVData("team2.csv");
+
+            let movementLog = [];
+            let team1Goals = 0, team2Goals = 0;
+            let teamInPossession = team2;
+            let currentZone = 'midfield';
+            let timeElapsed = 0;
+
+            movementLog.push(`Kickoff by ${kickoffPlayerName}.`);
+
+            for (let interval = 0; interval < totalIntervals; interval++) {
+                let actionsInInterval = Math.floor(Math.random() * 3) + 3;
+                for (let action = 0; action < actionsInInterval; action++) {
+                    if (currentZone === 'midfield') {
+                        if (teamInPossession === team1) {
+                            let midfielder = teamInPossession.find(p => p.ポジション === "MF");
+                            if (Math.random() < (midfielder.グラウンダーパス / 100)) {
+                                movementLog.push(`${timeElapsed}min: ${midfielder.名前} successfully passes in midfield.`);
+                                if (Math.random() < (team2[0].ディフェンスセンス / 100)) {
+                                    let defender = team2.find(p => p.ポジション === "DF");
+                                    movementLog.push(`${timeElapsed}min: ${defender.名前} intercepts and initiates a counter-attack.`);
+                                    teamInPossession = team2;
+                                    currentZone = 'forward';
+                                    continue;
+                                }
+                                if (Math.random() < 0.5) {
+                                    currentZone = 'forward';
+                                    movementLog.push(`${timeElapsed}min: ${midfielder.名前} advances play to forward zone.`);
+                                }
+                            } else {
+                                movementLog.push(`${timeElapsed}min: ${midfielder.名前}'s pass failed, possession lost.`);
+                                teamInPossession = team2;
+                            }
+                        } else if (teamInPossession === team2) {
+                            let midfielder = teamInPossession.find(p => p.ポジション === "MF");
+                            if (Math.random() < (midfielder.スピード / 100)) {
+                                movementLog.push(`${timeElapsed}min: ${midfielder.名前} quickly moves the ball forward on counter.`);
+                                currentZone = 'forward';
+                            } else {
+                                movementLog.push(`${timeElapsed}min: ${midfielder.名前}'s counter attempt halted, possession switches.`);
+                                teamInPossession = team1;
+                                currentZone = 'midfield';
+                            }
+                        }
+                    } else if (currentZone === 'forward') {
+                        let shooter = teamInPossession.find(p => p.ポジション === "FW");
+                        if (Math.random() < (shooter.決定力 / 100)) {
+                            movementLog.push(`${timeElapsed}min: Goal by ${shooter.名前}!`);
+                            if (teamInPossession === team1) team1Goals++;
+                            else team2Goals++;
+                            currentZone = 'midfield';
+                            teamInPossession = team1 === teamInPossession ? team2 : team1;
+                            continue;
+                        } else {
+                            movementLog.push(`${timeElapsed}min: ${shooter.名前}'s shot was saved.`);
+                            currentZone = 'midfield';
+                            teamInPossession = team1 === teamInPossession ? team2 : team1;
+                        }
+                    }
+                }
+                timeElapsed += intervalDuration;
+                if (timeElapsed >= 90) break;
+            }
+
+            movementLog.push(`Final Score: Team 1 ${team1Goals} - ${team2Goals} Team 2`);
+            movementLog.push(team1Goals > team2Goals ? "Team 1 wins!" : team2Goals > team1Goals ? "Team 2 wins!" : "The match ends in a draw.");
+
+            document.getElementById("simulation-log").innerHTML = movementLog.map(line => `<p>${line}</p>`).join("");
+        }
+
+        // シミュレーション実行
+        simulateMatch90minWithResult("ラウタロ・マルティネス");
+    </script>
+</body>
+</html>
