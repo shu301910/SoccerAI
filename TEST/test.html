@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サッカー試合予想</title>
+    <style>
+        .result, .details {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>サッカー試合予想</h1>
+        <p>2チームを選んで勝敗と詳細なスタッツを予測してください。</p>
+
+        <div class="team-selection">
+            <select id="team1">
+                <option value="インテル">インテル</option>
+                <option value="アーセナル">アーセナル</option>
+                <option value="サウサンプトン">サウサンプトン</option>
+                <option value="トリノ">トリノ</option>
+            </select>
+
+            <select id="team2">
+                <option value="インテル">インテル</option>
+                <option value="アーセナル">アーセナル</option>
+                <option value="サウサンプトン">サウサンプトン</option>
+                <option value="トリノ">トリノ</option>
+            </select>
+        </div>
+
+        <button onclick="predictResult()">予想する</button>
+
+        <div id="result" class="result"></div>
+        <div id="details" class="details"></div>
+    </div>
+
+    <script>
+        function getRandomCondition() {
+            const conditions = ['好調', '普通', '不調'];
+            return conditions[Math.floor(Math.random() * conditions.length)];
+        }
+
+        function adjustStats(stats, condition) {
+            if (condition === '好調') {
+                stats.possession += 20;
+                stats.passSuccessRate += 30;
+            } else if (condition === '不調') {
+                stats.possession -= 20;
+                stats.passSuccessRate -= 30;
+            }
+            return stats;
+        }
+
+        function predictResult() {
+            var team1 = document.getElementById("team1").value;
+            var team2 = document.getElementById("team2").value;
+
+            if (team1 === team2) {
+                document.getElementById("result").innerHTML = "同じチームを選択しています。別のチームを選んでください。";
+                document.getElementById("details").innerHTML = "";
+                return;
+            }
+
+            var prediction = "";
+            var details = "";
+
+            // チームごとのスタッツ
+            var stats = {
+                "インテル": { goals: 0, possession: 60, shots: 0, passSuccessRate: 88, playerStats: {} },
+                "アーセナル": { goals: 0, possession: 62, shots: 0, passSuccessRate: 87, playerStats: {} },
+                "サウサンプトン": { goals: 0, possession: 35, shots: 0, passSuccessRate: 80, playerStats: {} },
+                "トリノ": { goals: 0, possession: 37, shots: 0, passSuccessRate: 78, playerStats: {} }
+            };
+
+            // チームごとの選手スタッツ
+            stats["インテル"].playerStats = {
+                "ハフィーニャ": { goals: 1, assists: 0 },
+                "レヴァンドフスキ": { goals: 1, assists: 1 }
+            };
+            stats["アーセナル"].playerStats = {
+                "オーバメヤン": { goals: 1, assists: 0 },
+                "サカ": { goals: 0, assists: 1 }
+            };
+            stats["サウサンプトン"].playerStats = {
+                "ジェームズ": { goals: 0, assists: 0 },
+                "アダムス": { goals: 0, assists: 0 }
+            };
+            stats["トリノ"].playerStats = {
+                "ベロッティ": { goals: 0, assists: 0 },
+                "ルクッシ": { goals: 0, assists: 0 }
+            };
+
+            // コンディションの取得
+            const team1Condition = getRandomCondition();
+            const team2Condition = getRandomCondition();
+
+            // スタッツの調整
+            switch (true) {
+                case (team1 === "インテル" && team2 === "アーセナル") || (team1 === "アーセナル" && team2 === "インテル"):
+                    stats["インテル"].goals = 2;
+                    stats["アーセナル"].goals = 1;
+                    stats["インテル"].shots = 18;
+                    stats["アーセナル"].shots = 15;
+                    details += "インテル vs アーセナル (予想)\n";
+                    break;
+                case (team1 === "インテル" && team2 === "サウサンプトン") || (team1 === "サウサンプトン" && team2 === "インテル"):
+                    stats["インテル"].goals = 3;
+                    stats["サウサンプトン"].goals = 0;
+                    stats["インテル"].shots = 20;
+                    stats["サウサンプトン"].shots = 8;
+                    details += "インテル vs サウサンプトン (予想)\n";
+                    break;
+                case (team1 === "インテル" && team2 === "トリノ") || (team1 === "トリノ" && team2 === "インテル"):
+                    stats["インテル"].goals = 2;
+                    stats["トリノ"].goals = 0;
+                    stats["インテル"].shots = 17;
+                    stats["トリノ"].shots = 9;
+                    details += "インテル vs トリノ (予想)\n";
+                    break;
+                case (team1 === "アーセナル" && team2 === "サウサンプトン") || (team1 === "サウサンプトン" && team2 === "アーセナル"):
+                    stats["アーセナル"].goals = 3;
+                    stats["サウサンプトン"].goals = 1;
+                    stats["アーセナル"].shots = 16;
+                    stats["サウサンプトン"].shots = 10;
+                    details += "アーセナル vs サウサンプトン (予想)\n";
+                    break;
+                case (team1 === "アーセナル" && team2 === "トリノ") || (team1 === "トリノ" && team2 === "アーセナル"):
+                    stats["アーセナル"].goals = 2;
+                    stats["トリノ"].goals = 1;
+                    stats["アーセナル"].shots = 14;
+                    stats["トリノ"].shots = 12;
+                    details += "アーセナル vs トリノ (予想)\n";
+                    break;
+                default:
+                    break;
+            }
+
+            // コンディションを適用
+            stats[team1] = adjustStats(stats[team1], team1Condition);
+            stats[team2] = adjustStats(stats[team2], team2Condition);
+
+            // 勝敗結果を生成
+            prediction = `${team1} ${stats[team1].goals} - ${stats[team2].goals} ${team2} (予想)`;
+
+            // 詳細を表示
+            details += `<strong>${team1}のスタッツ:</strong><br>
+                ・ゴール数: ${stats[team1].goals}<br>
+                ・ボール支配率: ${stats[team1].possession}%<br>
+                ・シュート数: ${stats[team1].shots}本<br>
+                ・パス成功率: ${stats[team1].passSuccessRate}%<br>
+                <div class="player-stats"><strong>選手スタッツ:</strong><br>
+                ・ハフィーニャ: 得点 ${stats[team1].playerStats['ハフィーニャ'].goals}, アシスト ${stats[team1].playerStats['ハフィーニャ'].assists}<br>
+                ・レヴァンドフスキ: 得点 ${stats[team1].playerStats['レヴァンドフスキ'].goals}, アシスト ${stats[team1].playerStats['レヴァンドフスキ'].assists}<br>
+                </div><br>`;
+
+            details += `<strong>${team2}のスタッツ:</strong><br>
+                ・ゴール数: ${stats[team2].goals}<br>
+                ・ボール支配率: ${stats[team2].possession}%<br>
+                ・シュート数: ${stats[team2].shots}本<br>
+                ・パス成功率: ${stats[team2].passSuccessRate}%<br>
+                <div class="player-stats">
+                    <strong>選手スタッツ:</strong><br>
+                ・オーバメヤン: 得点 ${stats[team2].playerStats['オーバメヤン'] ? stats[team2].playerStats['オーバメヤン'].goals : 0}, アシスト ${stats[team2].playerStats['オーバメヤン'] ? stats[team2].playerStats['オーバメヤン'].assists : 0}<br>
+                ・サカ: 得点 ${stats[team2].playerStats['サカ'] ? stats[team2].playerStats['サカ'].goals : 0}, アシスト ${stats[team2].playerStats['サカ'] ? stats[team2].playerStats['サカ'].assists : 0}<br>
+                </div><br>`;
+
+            // 結果を表示
+            document.getElementById("result").innerHTML = prediction;
+            document.getElementById("details").innerHTML = details;
+        }
+    </script>
+</body>
+</html>
