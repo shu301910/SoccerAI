@@ -40,3 +40,4 @@ df.to_csv('players_stats.csv', index=False)
 # データの読み込み
 df = pd.read_csv('players_stats.csv')
 
+#test
