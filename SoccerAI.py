@@ -1,7 +1,7 @@
 import random
 
-# 選手データ (仮)
-players_data = [
+# 仮の選手データ (例として数名分のデータを簡略化しています)
+player_data_team1 = [
     {   
         '選手名': 'ロベルト・レヴァンドフスキ',
         'ポジション': 'FW',
@@ -317,61 +317,55 @@ players_data = [
     }
 ]
 
+player_data_team2 = [
+    {'選手名': 'モハメド・サラー', 'オフェンスセンス': 95, 'ボールコントロール': 90, '決定力': 85, 'ディフェンスセンス': 60, '守備意識': 65, 'ボール奪取': 50, 'スタミナ': 85},
+    {'選手名': 'ヴィルジル・ファン・ダイク', 'オフェンスセンス': 55, 'ボールコントロール': 65, '決定力': 50, 'ディフェンスセンス': 95, '守備意識': 95, 'ボール奪取': 90, 'スタミナ': 90},
+]
 
-# チームのスタイルに基づくパラメータ
-def calculate_team_strength(players, style):
+# チームデータの仮の例
+team_data1 = {'過去の勝率': 0.75}
+team_data2 = {'過去の勝率': 0.70}
+
+# 選手データとチームデータを受け取る関数
+def calculate_team_strength(player_data, team_data):
     attack_strength = 0
     defense_strength = 0
     stamina_total = 0
 
-    # 各選手のパラメータからチーム全体の強さを計算
-    for player in players:
+    # 選手データのループ処理
+    for player in player_data:
         attack_strength += player['オフェンスセンス'] + player['ボールコントロール'] + player['決定力']
         defense_strength += player['ディフェンスセンス'] + player['守備意識'] + player['ボール奪取']
         stamina_total += player['スタミナ']
     
-    # チームスタイルに応じて重視するパラメータを変える
-    if style == 'ポゼッション':
-        attack_strength *= 1.2  # 攻撃重視
-        defense_strength *= 0.9 # 守備は軽視
-    elif style == 'カウンター':
-        defense_strength *= 1.2  # 守備重視
-        attack_strength *= 0.9  # 攻撃は軽視
+    # チームデータを考慮
+    team_past_performance = team_data['過去の勝率']
+    team_attack_bonus = team_past_performance * 10  # 勝率に応じたボーナス
+    team_defense_bonus = team_past_performance * 10  # 勝率に応じた守備ボーナス
+    
+    attack_strength += team_attack_bonus
+    defense_strength += team_defense_bonus
     
     return attack_strength, defense_strength, stamina_total
 
-# シミュレーション実行
-def simulate_match(team1, team2):
-    team1_attack, team1_defense, team1_stamina = calculate_team_strength(team1['players'], team1['style'])
-    team2_attack, team2_defense, team2_stamina = calculate_team_strength(team2['players'], team2['style'])
+# シミュレーション実行関数
+def simulate_match(team1_data, team2_data, team1_players, team2_players):
+    team1_attack, team1_defense, team1_stamina = calculate_team_strength(team1_players, team1_data)
+    team2_attack, team2_defense, team2_stamina = calculate_team_strength(team2_players, team2_data)
 
-    # 勝率を簡易的に計算
-    team1_score = team1_attack - team2_defense + random.uniform(-10, 10)
-    team2_score = team2_attack - team1_defense + random.uniform(-10, 10)
+    # 勝率計算、各チームの得点を0から5の範囲に収める
+    team1_goals = max(0, min(5, round((team1_attack - team2_defense) / 100 + random.uniform(-1, 1))))
+    team2_goals = max(0, min(5, round((team2_attack - team1_defense) / 100 + random.uniform(-1, 1))))
 
-    # 結果表示
-    print(f"{team1['name']} スコア: {round(team1_score, 2)}")
-    print(f"{team2['name']} スコア: {round(team2_score, 2)}")
+    # 結果出力
+    print(f"チーム1 {team1_goals} - {team2_goals} チーム2")
 
-    if team1_score > team2_score:
-        print(f"勝者: {team1['name']}")
-    elif team2_score > team1_score:
-        print(f"勝者: {team2['name']}")
+    if team1_goals > team2_goals:
+        print(f"勝者: チーム1")
+    elif team2_goals > team1_goals:
+        print(f"勝者: チーム2")
     else:
         print("引き分け")
 
-# チームデータ作成
-team1 = {
-    'name': 'ポゼッションチーム',
-    'style': 'ポゼッション',
-    'players': players_data  # ここにポゼッションチームの選手データ
-}
-
-team2 = {
-    'name': 'カウンターチーム',
-    'style': 'カウンター',
-    'players': players_data  # ここにカウンターチームの選手データ
-}
-
-# 試合シミュレーションを実行
-simulate_match(team1, team2)
+# シミュレーション実行
+simulate_match(team_data1, team_data2, player_data_team1, player_data_team2)
