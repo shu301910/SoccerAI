@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer Match Simulation with File Input</title>
+</head>
+<body>
+    <h1>Soccer Match Simulation</h1>
+
+    <p>チーム1のCSVファイルを選択してください:</p>
+    <input type="file" id="team1File" accept=".csv"><br><br>
+
+    <p>チーム2のCSVファイルを選択してください:</p>
+    <input type="file" id="team2File" accept=".csv"><br><br>
+
+    <button onclick="simulate()">シミュレーションを実行</button>
+
+    <p id="result"></p>
+
+    <script>
+        let team1_data = [];
+        let team2_data = [];
+
+        // CSVファイルを読み込む関数
+        function readCSV(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n').map(row => row.split(','));
+                const headers = rows[0];
+                const data = rows.slice(1).map(row => {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header.trim()] = isNaN(row[index]) ? row[index].trim() : parseFloat(row[index].trim());
+                    });
+                    return obj;
+                });
+                callback(data);
+            };
+            reader.readAsText(file);
+        }
+
+        // シミュレーションを実行する関数
+        function simulate() {
+            const team1File = document.getElementById('team1File').files[0];
+            const team2File = document.getElementById('team2File').files[0];
+
+            if (team1File && team2File) {
+                readCSV(team1File, function(data1) {
+                    team1_data = data1;
+                    readCSV(team2File, function(data2) {
+                        team2_data = data2;
+
+                        // チームデータを設定
+                        const team_stats1 = {
+                            '勝率': 0.89,
+                            '試合数': 9,
+                            '得点数': 28,
+                            '失点数': 9,
+                            '支配率': 68.0
+                        };
+                        const team_stats2 = {
+                            '勝率': 0.65,
+                            '試合数': 12,
+                            '得点数': 28,
+                            '失点数': 15,
+                            '支配率': 54.0
+                        };
+
+                        // 天気をランダムに設定
+                        const weatherConditions = ['晴れ', '晴れ', '晴れ', '晴れ', '晴れ', '曇り', '曇り', '曇り', '雨', '雨'];
+                        const randomWeather = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+
+                        // シミュレーション実行
+                        simulateMatchWithWeather(team_stats1, team_stats2, team1_data, team2_data, randomWeather);
+                    });
+                });
+            } else {
+                alert("両方のチームのファイルを選択してください！");
+            }
+        }
+
+        // チームの強さを計算する関数
+        function calculateTeamStrength(playerData, teamData) {
+            let attackStrength = 0;
+            let defenseStrength = 0;
+            let staminaTotal = 0;
+
+            playerData.forEach(player => {
+                attackStrength += player['オフェンスセンス'] + player['ボールコントロール'] + player['決定力'];
+                defenseStrength += player['ディフェンスセンス'] + player['守備意識'] + player['ボール奪取'];
+                staminaTotal += player['スタミナ'];
+            });
+
+            // チームデータを考慮
+            attackStrength += teamData['勝率'] * 10;
+            defenseStrength += teamData['勝率'] * 10;
+
+            return { attackStrength, defenseStrength, staminaTotal };
+        }
+
+        // 天気を考慮した試合結果シミュレーション
+        function simulateMatchWithWeather(team1Data, team2Data, player_data_team1, player_data_team2, weather) {
+            const weatherEffects = {
+                '晴れ': { attackMultiplier: 1.0, defenseMultiplier: 1.0, staminaMultiplier: 1.0 },
+                '雨': { attackMultiplier: 0.9, defenseMultiplier: 1.1, staminaMultiplier: 0.9 },
+                '曇り': { attackMultiplier: 0.95, defenseMultiplier: 1.05, staminaMultiplier: 0.95 }
+            };
+
+            const weatherEffect = weatherEffects[weather];
+
+            // チームの強さを計算
+            const team1Strength = calculateTeamStrength(player_data_team1, team1Data);
+            const team2Strength = calculateTeamStrength(player_data_team2, team2Data);
+
+            // 天候による影響を適用
+            const team1Attack = team1Strength.attackStrength * weatherEffect.attackMultiplier;
+            const team1Defense = team1Strength.defenseStrength * weatherEffect.defenseMultiplier;
+            const team1Stamina = team1Strength.staminaTotal * weatherEffect.staminaMultiplier;
+
+            const team2Attack = team2Strength.attackStrength * weatherEffect.attackMultiplier;
+            const team2Defense = team2Strength.defenseStrength * weatherEffect.defenseMultiplier;
+            const team2Stamina = team2Strength.staminaTotal * weatherEffect.staminaMultiplier;
+
+            // 勝率計算、各チームの得点を0から5の範囲に収める
+            const team1Goals = Math.max(0, Math.min(5, Math.round((team1Attack - team2Defense) / 100 + Math.random() * 2 - 1)));
+            const team2Goals = Math.max(0, Math.min(5, Math.round((team2Attack - team1Defense) / 100 + Math.random() * 2 - 1)));
+
+            // 結果出力
+            let result = `天候: ${weather}<br>`;
+            result += `チーム1: ${team1Goals} - チーム2: ${team2Goals}<br>`;
+            result += team1Goals > team2Goals ? "勝者: チーム1" : team2Goals > team1Goals ? "勝者: チーム2" : "引き分け";
+
+            document.getElementById("result").innerHTML = result;
+        }
+    </script>
+</body>
+</html>
