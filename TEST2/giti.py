@@ -1,88 +1,81 @@
-# Adjust the function to ensure it simulates exactly 90 minutes
-def simulate_match_90min_with_result(team1, team2, kickoff_player_name, total_intervals=9, interval_duration=10):
-    movement_log = []
-    team1_goals, team2_goals = 0, 0  # Goal counters for each team
-    team_in_possession = team2  # Start with Team 2 (counter-attack team) in possession
-    current_zone = 'midfield'  # Start in midfield
-    time_elapsed = 0  # Total game time in minutes
+import pandas as pd
+import random
 
-    # Initialize kickoff by specified player
-    movement_log.append(f"Kickoff by {kickoff_player_name}.")
+# CSVからチームデータの読み込み
+team1_data = pd.read_csv(C:\Users\kshus\OneDrive\ドキュメント\GitHub\SoccerAI\TEST2\HomeTeam.xlsx)
+team2_data = pd.read_csv(C:\Users\kshus\OneDrive\ドキュメント\GitHub\SoccerAI\TEST2\AweyTeam.xlsx)
 
-    for interval in range(total_intervals):  # Total of 9 intervals (90 minutes / 10 minutes each)
-        actions_in_interval = random.randint(3, 5)  # Define actions per interval
-        for _ in range(actions_in_interval):
-            # Midfield actions: Possession team emphasizes passing, counter team focuses on fast transitions
-            if current_zone == 'midfield':
-                if team_in_possession == team1:  # Possession strategy for Team 1
-                    midfielder = random.choice([p for p in team_in_possession if 'MF' in p['ポジション']])
-                    if 'グラウンダーパス' in midfielder and random.random() < (midfielder['グラウンダーパス'] / 100):  # Possession focus: pass success rate
-                        movement_log.append(f"{time_elapsed}min: {midfielder['名前']} successfully passes in midfield.")
+# チームの統計データ
+team_stats1 = {'過去の勝率': 0.89, '試合数': 9, '得点数': 28, '失点数': 9, '平均支配率': 68.0}
+team_stats2 = {'過去の勝率': 0.65, '試合数': 12, '得点数': 28, '失点数': 15, '平均支配率': 52.0}
 
-                        # Opposing team's interception attempt
-                        defenders = [p for p in team2 if 'DF' in p['ポジション']]
-                        if defenders and 'ディフェンスセンス' in defenders[0] and random.random() < (defenders[0]['ディフェンスセンス'] / 100):  # Interception based on defense skill
-                            defender = random.choice(defenders)
-                            movement_log.append(f"{time_elapsed}min: {defender['名前']} intercepts and initiates a counter-attack.")
-                            team_in_possession = team2  # Switch to counter team in possession
-                            current_zone = 'forward'
-                            continue
+# ランダムに能力を上昇
+def random_boost_team_ability(team_data, boost_value=2):
+    for index, player in team_data.iterrows():
+        if random.random() < 0.5:  # 50%の確率で+2
+            team_data.loc[index, 'オフェンスセンス'] += boost_value
+            team_data.loc[index, 'ディフェンスセンス'] += boost_value
+            team_data.loc[index, 'スタミナ'] += boost_value
+    return team_data
 
-                        # Move to forward zone if possession is maintained
-                        if random.random() < 0.5:  # Higher chance to progress to forward area
-                            current_zone = 'forward'
-                            movement_log.append(f"{time_elapsed}min: {midfielder['名前']} advances play to forward zone.")
-                    else:
-                        movement_log.append(f"{time_elapsed}min: {midfielder['名前']}'s pass failed, possession lost.")
-                        team_in_possession = team2  # Switch possession to counter team
+# ポゼッションとカウンタースタイルを反映
+def calculate_team_strength(player_data, team_data, style="possession"):
+    attack_strength = 0
+    defense_strength = 0
+    stamina_total = 0
 
-                elif team_in_possession == team2:  # Counter-attack strategy for Team 2
-                    midfielder = random.choice([p for p in team_in_possession if 'MF' in p['ポジション']])
-                    if 'スピード' in midfielder and random.random() < (midfielder['スピード'] / 100):  # Counter focus: speed and quick passes
-                        movement_log.append(f"{time_elapsed}min: {midfielder['名前']} quickly moves the ball forward on counter.")
-                        current_zone = 'forward'
-                    else:
-                        movement_log.append(f"{time_elapsed}min: {midfielder['名前']}'s counter attempt halted, possession switches.")
-                        team_in_possession = team1  # Possession returns to Team 1
-                        current_zone = 'midfield'
+    for index, player in player_data.iterrows():
+        attack_strength += player['オフェンスセンス'] + player['ボールコントロール'] + player['決定力']
+        defense_strength += player['ディフェンスセンス'] + player['守備意識'] + player['ボール奪取']
+        stamina_total += player['スタミナ']
+    
+    team_past_performance = team_data['過去の勝率']
+    if style == "possession":
+        attack_strength *= 1.1
+        defense_strength *= 0.9
+    elif style == "counter":
+        attack_strength *= 0.9
+        defense_strength *= 1.1
+    
+    team_attack_bonus = team_past_performance * 10
+    team_defense_bonus = team_past_performance * 10
+    attack_strength += team_attack_bonus
+    defense_strength += team_defense_bonus
 
-            elif current_zone == 'forward':
-                # Possession team creates shooting opportunities
-                forwards = [p for p in team_in_possession if 'FW' in p['ポジション']]
-                if forwards:
-                    shooter = random.choice(forwards)
-                    if '決定力' in shooter and random.random() < (shooter['決定力'] / 100):  # Shot success based on finishing skill
-                        movement_log.append(f"{time_elapsed}min: Goal by {shooter['名前']}!")
-                        if team_in_possession == team1:
-                            team1_goals += 1
-                        else:
-                            team2_goals += 1
-                        current_zone = 'midfield'  # Reset to midfield after goal
-                        team_in_possession = team2 if team_in_possession == team1 else team1  # Switch possession
-                        continue  # Move to next action
+    return attack_strength, defense_strength, stamina_total
 
-                    else:
-                        # Shot saved, reset to midfield
-                        movement_log.append(f"{time_elapsed}min: {shooter['名前']}'s shot was saved.")
-                        current_zone = 'midfield'
-                        team_in_possession = team1 if team_in_possession == team2 else team2  # Switch possession
+# シミュレーション実行関数
+def simulate_match(team1_data, team2_data, player_data_team1, player_data_team2, duration=90, increment=10):
+    team1_data_boosted = random_boost_team_ability(player_data_team1)
+    team2_data_boosted = random_boost_team_ability(player_data_team2)
 
-        # Increment total time by the interval duration
-        time_elapsed += interval_duration
-        if time_elapsed >= 90:  # End simulation at 90 minutes
-            break
+    team1_attack, team1_defense, team1_stamina = calculate_team_strength(team1_data_boosted, team1_data, "possession")
+    team2_attack, team2_defense, team2_stamina = calculate_team_strength(team2_data_boosted, team2_data, "counter")
 
-    # Append final score to the log
-    movement_log.append(f"Final Score: Team 1 {team1_goals} - {team2_goals} Team 2")
+    team1_goals = 0
+    team2_goals = 0
+
+    for minute in range(0, duration + 1, increment):
+        team1_event_chance = team1_attack / (team1_attack + team2_defense)
+        team2_event_chance = team2_attack / (team2_attack + team1_defense)
+
+        if random.random() < team1_event_chance:
+            team1_goals += 1 if random.random() < 0.05 else 0
+            print(f"{minute}分: チーム1が攻撃し得点のチャンス！現在のスコア チーム1 {team1_goals} - チーム2 {team2_goals}")
+        elif random.random() < team2_event_chance:
+            team2_goals += 1 if random.random() < 0.05 else 0
+            print(f"{minute}分: チーム2が反撃し得点のチャンス！現在のスコア チーム1 {team1_goals} - チーム2 {team2_goals}")
+        else:
+            print(f"{minute}分: 両チームが中盤でボールを奪い合い、特に大きな動きはなし。")
+
+    # 最終結果出力
+    print(f"試合終了 - 最終スコア: チーム1 {team1_goals} - チーム2 {team2_goals}")
     if team1_goals > team2_goals:
-        movement_log.append("Team 1 wins!")
+        print("チーム1の勝利！")
     elif team2_goals > team1_goals:
-        movement_log.append("Team 2 wins!")
+        print("チーム2の勝利！")
     else:
-        movement_log.append("The match ends in a draw.")
+        print("引き分け！")
 
-    return movement_log
-
-# Run the adjusted simulation for 90 minutes
-simulation_90min_with_result = simulate_match_90min_with_result(team1_players, team2_players, "ラウタロ・マルティネス")
-simulation_90min_with_result
+# 実行
+simulate_match(team_stats1, team_stats2, team1_data, team2_data)
