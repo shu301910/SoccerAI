@@ -44,58 +44,76 @@ def calculate_team_strength(player_data, team_data):
     
     return attack_strength, defense_strength, stamina_total
 
-# 試合シミュレーション
-def simulate_match_with_timed_intervals(player_data_team1, player_data_team2, team1_data, team2_data, kickoff_player_name, total_intervals=9, interval_duration=10):
+# リアルな時間間隔での試合シミュレーション
+def simulate_match_with_timed_intervals_realistic(player_data_team1, player_data_team2, team1_data, team2_data, kickoff_player_name, total_intervals=9, interval_duration=10):
     movement_log = []
     team_in_possession = player_data_team2  # Start with Team 2 in possession
     current_zone = 'midfield'
     time_elapsed = 0
 
+    # Record kickoff by the specified player
     movement_log.append(f"Kickoff by {kickoff_player_name}.")
 
     for interval in range(total_intervals):
-        actions_in_interval = random.randint(3, 5)
+        # Set realistic action frequency per interval, i.e., 2-3 actions within each 10-minute period
+        actions_in_interval = random.randint(2, 3)
+        action_delay = interval_duration // actions_in_interval  # Delay between actions within interval
+
         for _ in range(actions_in_interval):
             if current_zone == 'midfield':
-                midfielder = random.choice(player_data_team1[player_data_team1['ポジション'] == 'MF'].to_dict('records'))
-                if random.random() < (midfielder['ドリブル'] / 100):
-                    movement_log.append(f"{time_elapsed}min: {midfielder['名前']} successfully dribbles.")
+                # チーム2のミッドフィールダーが存在するか確認してから選択
+                midfielders_team2 = player_data_team2[player_data_team2['ポジション'].isin(['MF', 'LMF', 'CMF', 'DMF', 'RMF'])]
+                if not midfielders_team2.empty:
+                    midfielder = random.choice(midfielders_team2.to_dict('records'))
+                else:
+                    print("チーム2にミッドフィールダーが存在しません。")
+                    continue
 
-                    defenders = player_data_team2[player_data_team2['ポジション'] == 'DF'].to_dict('records')
-                    if defenders:
-                        defender = random.choice(defenders)
+                if random.random() < (midfielder['ドリブル'] / 100):  # Dribble success
+                    movement_log.append(f"{time_elapsed}min: {midfielder['選手名']} successfully dribbles.")
+
+                    # チーム1のディフェンダーからインターセプトを試みる
+                    defenders_team1 = player_data_team1[player_data_team1['ポジション'].isin(['DF', 'LSB', 'RSB', 'CB'])]
+                    if not defenders_team1.empty:
+                        defender = random.choice(defenders_team1.to_dict('records'))
                         if random.random() < (defender['ディフェンスセンス'] / 100):
-                            movement_log.append(f"{time_elapsed}min: {defender['名前']} intercepts in midfield.")
-                            team_in_possession = player_data_team1
+                            movement_log.append(f"{time_elapsed}min: {defender['選手名']} intercepts in midfield.")
+                            team_in_possession = player_data_team1  # ボールを奪取
                             current_zone = 'midfield'
                             continue
 
+                    # Forward pass attempt if no interception
                     if random.random() < 0.4:
                         current_zone = 'forward'
-                        movement_log.append(f"{time_elapsed}min: {midfielder['名前']} passes successfully to forward area.")
+                        movement_log.append(f"{time_elapsed}min: {midfielder['選手名']} passes to forward area.")
+
                 else:
-                    movement_log.append(f"{time_elapsed}min: {midfielder['名前']}'s dribble failed, possession lost.")
-                    team_in_possession = player_data_team2
+                    movement_log.append(f"{time_elapsed}min: {midfielder['選手名']}'s dribble failed, possession lost.")
+                    team_in_possession = player_data_team1
                     continue
 
             elif current_zone == 'forward':
-                forwards = player_data_team1[player_data_team1['ポジション'] == 'FW'].to_dict('records')
-                if forwards:
-                    shooter = random.choice(forwards)
-                    if random.random() < (shooter['決定力'] / 100):
-                        movement_log.append(f"{time_elapsed}min: Goal by {shooter['名前']}!")
+                # Forward attempts shot if in forward zone
+                forwards_team2 = player_data_team2[player_data_team2['ポジション'] == 'FW']
+                if not forwards_team2.empty:
+                    shooter = random.choice(forwards_team2.to_dict('records'))
+                    if random.random() < (shooter['決定力'] / 100):  # Shot success
+                        movement_log.append(f"{time_elapsed}min: Goal by {shooter['選手名']}!")
                         return movement_log
                     else:
-                        movement_log.append(f"{time_elapsed}min: {shooter['名前']}'s shot was saved.")
+                        movement_log.append(f"{time_elapsed}min: {shooter['選手名']}'s shot was saved.")
                         current_zone = 'midfield'
-                        team_in_possession = player_data_team2 if team_in_possession is player_data_team1 else player_data_team1
+                        team_in_possession = player_data_team1 if team_in_possession is player_data_team2 else player_data_team2
 
-        time_elapsed += interval_duration
+            # Increment time by the delay between actions within the interval
+            time_elapsed += action_delay
+
+        # Increment time by the full interval duration
+        time_elapsed += interval_duration - (actions_in_interval * action_delay)
 
     return movement_log
 
 # 実行例
-results = simulate_match_with_timed_intervals(team1_players, team2_players, team_stats1, team_stats2, "ラウタロ・マルティネス")
+results = simulate_match_with_timed_intervals_realistic(team1_players, team2_players, team_stats1, team_stats2, "ラウタロ・マルティネス")
 for line in results:
     print(line)
-
